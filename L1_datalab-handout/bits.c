@@ -140,7 +140,11 @@ NOTES:
  *   Rating: 1
  */
 int bitXor(int x, int y) {
-  return 2;
+  int oneIfBothOne = x & y;
+    int zeroIfBothOne = ~oneIfBothOne;
+    int oneIfContainsOne = ~((~x) & (~y));
+    int result = zeroIfBothOne & oneIfContainsOne;
+    return result;
 }
 /* 
  * tmin - return minimum two's complement integer 
@@ -149,7 +153,7 @@ int bitXor(int x, int y) {
  *   Rating: 1
  */
 int tmin(void) {
-  return 2;
+  return 1<<31;
 }
 //2
 /*
@@ -160,7 +164,7 @@ int tmin(void) {
  *   Rating: 2
  */
 int isTmax(int x) {
-  return 2;
+  return !!(x+1) & !(x ^ (~(x+1)));
 }
 /* 
  * allOddBits - return 1 if all odd-numbered bits in word set to 1
@@ -170,7 +174,11 @@ int isTmax(int x) {
  *   Rating: 2
  */
 int allOddBits(int x) {
-  return 2;
+   int mask = 0xAA | (0xAA << 8);
+   mask |= (0xAA << 16);
+   mask |= (0xAA << 24);
+   
+   return !((x&mask) ^ mask);
 }
 /* 
  * negate - return -x 
@@ -180,7 +188,7 @@ int allOddBits(int x) {
  *   Rating: 2
  */
 int negate(int x) {
-  return 2;
+  return ~x+1;
 }
 //3
 /* 
@@ -193,7 +201,8 @@ int negate(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
-  return 2;
+  int y = x&15;
+  return (!(x>>4 ^ 3)) & (!(y ^ 8) | !(y ^ 9) | !(y & 8));
 }
 /* 
  * conditional - same as x ? y : z 
@@ -203,7 +212,9 @@ int isAsciiDigit(int x) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+  int bool = !!x;
+  int mask = ~bool + 1;
+  return (mask & y) | (~mask & z);
 }
 /* 
  * isLessOrEqual - if x <= y  then return 1, else return 0 
@@ -213,7 +224,14 @@ int conditional(int x, int y, int z) {
  *   Rating: 3
  */
 int isLessOrEqual(int x, int y) {
-  return 2;
+  // int min = 1<<31;
+  int is_x_neg = x>>31 & 1;
+  int is_y_neg = y>>31 & 1;
+  int both_same = !(is_x_neg ^ is_y_neg);
+  int mask = ~both_same + 1;
+  int diff = y + (~x + 1);
+  int is_diff_pos = !(diff>>31 & 1);
+  return (mask & is_diff_pos) | (~mask & is_x_neg);
 }
 //4
 /* 
@@ -225,7 +243,10 @@ int isLessOrEqual(int x, int y) {
  *   Rating: 4 
  */
 int logicalNeg(int x) {
-  return 2;
+  int neg = x>>31 & 1;
+  int pos = (~x+1)>>31 & 1;
+  int val = neg | pos;
+  return (~val+1)+1;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
@@ -240,7 +261,39 @@ int logicalNeg(int x) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-  return 0;
+  int y, result, mask16, mask8, mask4, mask2, mask1, bitnum;
+
+    mask1 = 0x2;                    // 0x1 << 1
+    mask2 = 0xC;                    // 0x3 << 2
+    mask4 = 0xF0;                   // 0x000000F0
+    mask8 = 0xFF << 8;              // 0x0000FF00
+    mask16 = (mask8 | 0xFF) << 16;  // 0xFFFF0000
+
+    result = 1;
+    y = x ^ (x >> 31);  //cast the number to positive with the same result
+
+    // Check first 16 bits, if they have at least one bit - result > 16
+    bitnum = (!!(y & mask16)) << 4;  // 16 OR zero
+    result += bitnum;
+    y = y >> bitnum;
+
+    bitnum = (!!(y & mask8)) << 3;  // 8 OR zero
+    result += bitnum;
+    y = y >> bitnum;
+
+    bitnum = (!!(y & mask4)) << 2;  // 4 OR zero
+    result += bitnum;
+    y = y >> bitnum;
+
+    bitnum = (!!(y & mask2)) << 1;  // 2 OR zero
+    result += bitnum;
+    y = y >> bitnum;
+
+    bitnum = !!(y & mask1);  // 1 OR zero
+    result += bitnum;
+    y = y >> bitnum;
+
+    return result + (y & 1);
 }
 //float
 /* 
