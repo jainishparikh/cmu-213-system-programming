@@ -26,13 +26,15 @@ typedef struct {
     int evictions;
 } Cache_stats;
 
-void handle_op(Cache *cache, Cache_stats *stats, int s_val, int E, long long int tag, int *most_c){
+void handle_op(Cache *cache, Cache_stats *stats, int s_val, int E, long long int tag, int *most_c, int *count){
     int empty_index = -1;
     int lru_index = -1;
     long long lru_counter = (long long)((unsigned long long)~0ULL >> 1);
     for(int i=0; i<E; i++){
         if(cache->sets[s_val].blocks[i].valid && cache->sets[s_val].blocks[i].tag == tag){
-            printf("Hit for Set:%d Tag:%lld\n", s_val, tag);
+            if(*count<100){
+                printf("Hit for Set:%d Tag:%lld\n", s_val, tag);
+            }
             stats->hits++;
             *most_c = *most_c + 1;
             cache->sets[s_val].blocks[i].counter = *most_c;
@@ -49,12 +51,16 @@ void handle_op(Cache *cache, Cache_stats *stats, int s_val, int E, long long int
     int index;
     stats->miss++;
     if(empty_index==-1){
-        printf("Miss and eviction for Set:%d Tag:%lld, evicted index=%d\n", s_val, tag, lru_index);
+        if(*count<100){
+            printf("Miss and eviction for Set:%d Tag:%lld, evicted index=%d\n", s_val, tag, lru_index);
+        }
         //miss and eviction
         stats->evictions++;
         index = lru_index;
     }else{
-        printf("Miss and add for Set:%d Tag:%lld\n", s_val, tag);
+        if(*count<100){
+            printf("Miss and add for Set:%d Tag:%lld\n", s_val, tag);
+        }
         //miss and add
         index = empty_index;
     }
@@ -133,7 +139,7 @@ int main(int argc, char *argv[])
     unsigned long long addr;
     int size;
     int most_c = 0;
-
+    int count = 0;
     // The space before %c is CRITICAL: it skips the leading space in the trace file
     while (fscanf(file, " %c %llx,%d", &op, &addr, &size) == 3) {
         
@@ -144,19 +150,21 @@ int main(int argc, char *argv[])
         s_val = addr>>b & s_mask;
         tag = addr >> (s+b);
 
-        if (verbose) {
+        if (verbose && count<100) {
             printf("%c %llx,%d -- set: %d, tag: %lld ----->", op, addr, size, s_val, tag);
         }
+        
 
         // Now, call your cache logic based on the operation
-        if(op=='L' || op=='S'){ handle_op(&cache, &stats, s_val, E, tag, &most_c);}
+        if(op=='L' || op=='S'){ handle_op(&cache, &stats, s_val, E, tag, &most_c, &count);}
         else if(op=='M'){ 
-            handle_op(&cache, &stats, s_val, E, tag, &most_c);
-            handle_op(&cache, &stats, s_val, E, tag, &most_c);
+            handle_op(&cache, &stats, s_val, E, tag, &most_c, &count);
+            handle_op(&cache, &stats, s_val, E, tag, &most_c, &count);
         }
         
         
-        if (verbose) printf("\n");
+        if (verbose && count<100) printf("\n");
+        count++;
     }
 
     fclose(file);

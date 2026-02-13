@@ -16,10 +16,10 @@ test-trans: test-trans.c trans.o cachelab.c cachelab.h
 	$(CC) $(CFLAGS) -o test-trans test-trans.c cachelab.c trans.o 
 
 tracegen: tracegen.c trans.o cachelab.c
-	$(CC) $(CFLAGS) -O0 -o tracegen tracegen.c trans.o cachelab.c
+	$(CC) $(CFLAGS) -O2 -o tracegen tracegen.c trans.o cachelab.c
 
 trans.o: trans.c
-	$(CC) $(CFLAGS) -O0 -c trans.c
+	$(CC) $(CFLAGS) -O2 -c trans.c
 
 #
 # Clean the src dirctory
